@@ -136,6 +136,7 @@ export class AIChatInputWidget extends ReactWidget {
     protected init(): void {
         this.id = AIChatInputWidget.ID;
         this.title.closable = false;
+        this.toDispose.push(this.resources.add(this.getResourceUri(), ''));
         this.update();
     }
 
@@ -169,8 +170,7 @@ export class AIChatInputWidget extends ReactWidget {
                 chatModel={this._chatModel}
                 pinnedAgent={this._pinnedAgent}
                 editorProvider={this.editorProvider}
-                resources={this.resources}
-                resourceUriProvider={this.getResourceUri.bind(this)}
+                uri={this.getResourceUri()}
                 contextMenuCallback={this.handleContextMenu.bind(this)}
                 isEnabled={this.isEnabled}
                 setEditorRef={editor => {
@@ -282,8 +282,7 @@ interface ChatInputProperties {
     chatModel: ChatModel;
     pinnedAgent?: ChatAgent;
     editorProvider: MonacoEditorProvider;
-    resources: InMemoryResources;
-    resourceUriProvider: () => URI;
+    uri: URI;
     contextMenuCallback: (event: IMouseEvent) => void;
     setEditorRef: (editor: SimpleMonacoEditor | undefined) => void;
     showContext?: boolean;
@@ -323,8 +322,7 @@ const ChatInput: React.FunctionComponent<ChatInputProperties> = (props: ChatInpu
     const editorRef = React.useRef<SimpleMonacoEditor | undefined>(undefined);
 
     React.useEffect(() => {
-        const uri = props.resourceUriProvider();
-        const resource = props.resources.add(uri, '');
+        const uri = props.uri;
         const createInputElement = async () => {
             const paddingTop = 6;
             const lineHeight = 20;
@@ -399,7 +397,6 @@ const ChatInput: React.FunctionComponent<ChatInputProperties> = (props: ChatInpu
         createInputElement();
 
         return () => {
-            resource.dispose();
             props.setEditorRef(undefined);
             if (editorRef.current) {
                 editorRef.current.dispose();
