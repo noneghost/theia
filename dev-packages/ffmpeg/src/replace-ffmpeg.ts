@@ -23,8 +23,8 @@ import * as ffmpeg from './ffmpeg';
 import { hashFile } from './hash';
 
 export async function replaceFfmpeg(options: ffmpeg.FfmpegOptions = {}): Promise<void> {
-    let shouldDownload = true;
-    let shouldReplace = true;
+    let shouldDownload = false;
+    let shouldReplace = false;
     const {
         name: ffmpegName,
         location: ffmpegLocation,
