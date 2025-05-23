@@ -21,7 +21,7 @@ import { StorageService } from '@theia/core/lib/browser';
 import { Marker } from '@theia/markers/lib/common/marker';
 import { MarkerManager } from '@theia/markers/lib/browser/marker-manager';
 import URI from '@theia/core/lib/common/uri';
-import { SourceBreakpoint, BREAKPOINT_KIND, ExceptionBreakpoint, FunctionBreakpoint, BaseBreakpoint, InstructionBreakpoint } from './breakpoint-marker';
+import { SourceBreakpoint, BREAKPOINT_KIND, ExceptionBreakpoint, FunctionBreakpoint, BaseBreakpoint, InstructionBreakpoint, DataBreakpoint } from './breakpoint-marker';
 
 export interface BreakpointsChangeEvent<T extends BaseBreakpoint> {
     uri: URI
@@ -31,6 +31,7 @@ export interface BreakpointsChangeEvent<T extends BaseBreakpoint> {
 }
 export type SourceBreakpointsChangeEvent = BreakpointsChangeEvent<SourceBreakpoint>;
 export type FunctionBreakpointsChangeEvent = BreakpointsChangeEvent<FunctionBreakpoint>;
+export type DataBreakpointsChangeEvent = BreakpointsChangeEvent<DataBreakpoint>;
 export type InstructionBreakpointsChangeEvent = BreakpointsChangeEvent<InstructionBreakpoint>;
 
 @injectable()
@@ -41,6 +42,8 @@ export class BreakpointManager extends MarkerManager<SourceBreakpoint> {
     static FUNCTION_URI = new URI('debug:function://');
 
     static INSTRUCTION_URI = new URI('debug:instruction://');
+
+    static DATA_URI = new URI('debug:data://');
 
     protected readonly owner = 'breakpoint';
 
@@ -56,6 +59,9 @@ export class BreakpointManager extends MarkerManager<SourceBreakpoint> {
 
     protected readonly onDidChangeFunctionBreakpointsEmitter = new Emitter<FunctionBreakpointsChangeEvent>();
     readonly onDidChangeFunctionBreakpoints = this.onDidChangeFunctionBreakpointsEmitter.event;
+
+    protected readonly onDidChangeDataBreakpointsEmitter = new Emitter<DataBreakpointsChangeEvent>();
+    readonly onDidChangeDataBreakpoints = this.onDidChangeDataBreakpointsEmitter.event;
 
     protected readonly onDidChangeInstructionBreakpointsEmitter = new Emitter<InstructionBreakpointsChangeEvent>();
     readonly onDidChangeInstructionBreakpoints = this.onDidChangeInstructionBreakpointsEmitter.event;
@@ -144,7 +150,7 @@ export class BreakpointManager extends MarkerManager<SourceBreakpoint> {
             }
         }
         let didChangeFunction = false;
-        for (const breakpoint of (this.getFunctionBreakpoints() as BaseBreakpoint[]).concat(this.getInstructionBreakpoints())) {
+        for (const breakpoint of (this.getFunctionBreakpoints() as BaseBreakpoint[]).concat(this.getDataBreakpoints(), this.getInstructionBreakpoints())) {
             if (breakpoint.enabled !== enabled) {
                 breakpoint.enabled = enabled;
                 didChangeFunction = true;
@@ -211,6 +217,38 @@ export class BreakpointManager extends MarkerManager<SourceBreakpoint> {
         }
     }
 
+    protected dataBreakpoints: DataBreakpoint[] = [];
+
+    getDataBreakpoints(): DataBreakpoint[] {
+        return this.dataBreakpoints;
+    }
+
+    setDataBreakpoints(dataBreakpoints: DataBreakpoint[]): void {
+        const oldBreakpoints = new Map(this.dataBreakpoints.map(b => [b.id, b] as [string, DataBreakpoint]));
+
+        this.dataBreakpoints = dataBreakpoints;
+        this.fireOnDidChangeMarkers(BreakpointManager.DATA_URI);
+
+        const added: DataBreakpoint[] = [];
+        const removed: DataBreakpoint[] = [];
+        const changed: DataBreakpoint[] = [];
+        const ids = new Set<string>();
+        for (const newBreakpoint of dataBreakpoints) {
+            ids.add(newBreakpoint.id);
+            if (oldBreakpoints.has(newBreakpoint.id)) {
+                changed.push(newBreakpoint);
+            } else {
+                added.push(newBreakpoint);
+            }
+        }
+        for (const [id, breakpoint] of oldBreakpoints.entries()) {
+            if (!ids.has(id)) {
+                removed.push(breakpoint);
+            }
+        }
+        this.onDidChangeDataBreakpointsEmitter.fire({ uri: BreakpointManager.DATA_URI, added, removed, changed });
+    }
+
     protected functionBreakpoints: FunctionBreakpoint[] = [];
 
     getFunctionBreakpoints(): FunctionBreakpoint[] {
@@ -250,7 +288,7 @@ export class BreakpointManager extends MarkerManager<SourceBreakpoint> {
     }
 
     hasBreakpoints(): boolean {
-        return Boolean(this.getUris().next().value || this.functionBreakpoints.length || this.instructionBreakpoints.length);
+        return Boolean(this.getUris().next().value || this.functionBreakpoints.length || this.dataBreakpoints.length || this.instructionBreakpoints.length);
     }
 
     protected setInstructionBreakpoints(newBreakpoints: InstructionBreakpoint[]): void {
@@ -310,6 +348,7 @@ export class BreakpointManager extends MarkerManager<SourceBreakpoint> {
     removeBreakpoints(): void {
         this.cleanAllMarkers();
         this.setFunctionBreakpoints([]);
+        this.setDataBreakpoints([]);
         this.setInstructionBreakpoints([]);
     }
 
@@ -322,6 +361,9 @@ export class BreakpointManager extends MarkerManager<SourceBreakpoint> {
         // eslint-disable-next-line guard-for-in
         for (const uri in data.breakpoints) {
             this.setBreakpoints(new URI(uri), data.breakpoints[uri]);
+        }
+        if (data.dataBreakpoints) {
+            this.setDataBreakpoints(data.dataBreakpoints);
         }
         if (data.functionBreakpoints) {
             this.setFunctionBreakpoints(data.functionBreakpoints);
@@ -346,6 +388,9 @@ export class BreakpointManager extends MarkerManager<SourceBreakpoint> {
         if (this.functionBreakpoints.length) {
             data.functionBreakpoints = this.functionBreakpoints;
         }
+        if (this.dataBreakpoints.length) {
+            data.dataBreakpoints = this.dataBreakpoints;
+        }
         if (this.exceptionBreakpoints.size) {
             data.exceptionBreakpoints = [...this.exceptionBreakpoints.values()];
         }
@@ -364,6 +409,7 @@ export namespace BreakpointManager {
         }
         exceptionBreakpoints?: ExceptionBreakpoint[];
         functionBreakpoints?: FunctionBreakpoint[];
+        dataBreakpoints?: DataBreakpoint[];
         instructionBreakpoints?: InstructionBreakpoint[];
     }
 }

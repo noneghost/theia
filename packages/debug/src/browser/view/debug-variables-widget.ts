@@ -27,6 +27,7 @@ export class DebugVariablesWidget extends SourceTreeWidget {
     static CONTEXT_MENU: MenuPath = ['debug-variables-context-menu'];
     static EDIT_MENU: MenuPath = [...DebugVariablesWidget.CONTEXT_MENU, 'a_edit'];
     static WATCH_MENU: MenuPath = [...DebugVariablesWidget.CONTEXT_MENU, 'b_watch'];
+    static BREAK_MENU: MenuPath = [...DebugVariablesWidget.CONTEXT_MENU, 'c_break'];
     static FACTORY_ID = 'debug:variables';
     static override createContainer(parent: interfaces.Container): Container {
         const child = SourceTreeWidget.createContainer(parent, {
