@@ -18,7 +18,7 @@ import { ElementExt } from '@theia/core/shared/@lumino/domutils';
 import { injectable, inject, postConstruct, interfaces, Container } from '@theia/core/shared/inversify';
 import { TreeSourceNode } from '@theia/core/lib/browser/source-tree';
 import { ContextKeyService, ContextKey } from '@theia/core/lib/browser/context-key-service';
-import { BaseWidget, PanelLayout, Widget, Message, MessageLoop, StatefulWidget, CompositeTreeNode } from '@theia/core/lib/browser';
+import { BaseWidget, PanelLayout, Widget, Message, MessageLoop, StatefulWidget, CompositeTreeNode, TreeNode } from '@theia/core/lib/browser';
 import { MonacoEditor } from '@theia/monaco/lib/browser/monaco-editor';
 import URI from '@theia/core/lib/common/uri';
 import { MonacoEditorProvider } from '@theia/monaco/lib/browser/monaco-editor-provider';
@@ -30,6 +30,9 @@ import * as monaco from '@theia/monaco-editor-core';
 import { Disposable } from '@theia/core/lib/common/disposable';
 import { EditorManager } from '@theia/editor/lib/browser';
 import { MonacoEditorService } from '@theia/monaco/lib/browser/monaco-editor-service';
+import { SelectableTreeNode } from '@theia/core/lib/browser/tree/tree-selection';
+import { AnsiConsoleItem } from './ansi-console-item';
+import { ClipboardService } from '@theia/core/lib/browser/clipboard-service';
 
 export const ConsoleOptions = Symbol('ConsoleWidgetOptions');
 export interface ConsoleOptions {
@@ -86,6 +89,9 @@ export class ConsoleWidget extends BaseWidget implements StatefulWidget {
 
     @inject(EditorManager)
     protected readonly editorManager: EditorManager;
+
+    @inject(ClipboardService)
+    protected readonly clipboardService: ClipboardService;
 
     protected _input: MonacoEditor;
     protected _inputFocusContextKey: ContextKey<boolean>;
@@ -211,6 +217,21 @@ export class ConsoleWidget extends BaseWidget implements StatefulWidget {
         const selection = document.getSelection();
         if (selection) {
             selection.selectAllChildren(this.content.node);
+        }
+    }
+
+    copyAll(): void {
+        const focusedNode: SelectableTreeNode | undefined = this.content.model.getFocusedNode();
+        const nodes = focusedNode?.parent?.children;
+        let text = '';
+        if (nodes) {
+            nodes.forEach((node: TreeNode) => {
+                const element = (node as unknown as { element: AnsiConsoleItem }).element;
+                if (element) {
+                    text += element.content + '\n';
+                }
+            });
+            this.clipboardService.writeText(text);
         }
     }
 
