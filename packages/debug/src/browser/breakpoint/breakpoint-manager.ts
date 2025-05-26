@@ -151,7 +151,7 @@ export class BreakpointManager extends MarkerManager<SourceBreakpoint> {
             }
         }
         let didChangeFunction = false;
-        for (const breakpoint of (this.getFunctionBreakpoints() as BaseBreakpoint[]).concat(this.getInstructionBreakpoints())) {
+        for (const breakpoint of (this.getFunctionBreakpoints() as BaseBreakpoint[]).concat(this.getDataBreakpoints(), this.getInstructionBreakpoints())) {
             if (breakpoint.enabled !== enabled) {
                 breakpoint.enabled = enabled;
                 didChangeFunction = true;
@@ -257,7 +257,7 @@ export class BreakpointManager extends MarkerManager<SourceBreakpoint> {
     }
 
     hasBreakpoints(): boolean {
-        return Boolean(this.getUris().next().value || this.functionBreakpoints.length || this.instructionBreakpoints.length);
+        return Boolean(this.getUris().next().value || this.functionBreakpoints.length || this.dataBreakpoints.length || this.instructionBreakpoints.length);
     }
 
     protected setInstructionBreakpoints(newBreakpoints: InstructionBreakpoint[]): void {
@@ -338,6 +338,7 @@ export class BreakpointManager extends MarkerManager<SourceBreakpoint> {
     removeBreakpoints(): void {
         this.cleanAllMarkers();
         this.setFunctionBreakpoints([]);
+        this.setDataBreakpoints([]);
         this.setInstructionBreakpoints([]);
         this.setDataBreakpoints([]);
     }
@@ -351,6 +352,9 @@ export class BreakpointManager extends MarkerManager<SourceBreakpoint> {
         // eslint-disable-next-line guard-for-in
         for (const uri in data.breakpoints) {
             this.setBreakpoints(new URI(uri), data.breakpoints[uri]);
+        }
+        if (data.dataBreakpoints) {
+            this.setDataBreakpoints(data.dataBreakpoints);
         }
         if (data.functionBreakpoints) {
             this.setFunctionBreakpoints(data.functionBreakpoints);
@@ -374,6 +378,9 @@ export class BreakpointManager extends MarkerManager<SourceBreakpoint> {
         }
         if (this.functionBreakpoints.length) {
             data.functionBreakpoints = this.functionBreakpoints;
+        }
+        if (this.dataBreakpoints.length) {
+            data.dataBreakpoints = this.dataBreakpoints;
         }
         if (this.exceptionBreakpoints.size) {
             data.exceptionBreakpoints = [...this.exceptionBreakpoints.values()];

@@ -213,10 +213,11 @@ export class DebugSession implements CompositeTreeElement {
     }
 
     async toSource(uri: URI): Promise<DebugSource> {
-        const source = this.getSourceForUri(uri);
-        if (source) {
-            return source;
-        }
+        // theia[#13883]
+        // const source = this.getSourceForUri(uri);
+        // if (source) {
+        //     return source;
+        // }
 
         return this.getSource(await this.toDebugSource(uri));
     }
@@ -778,6 +779,17 @@ export class DebugSession implements CompositeTreeElement {
         await this.sendRequest('setExceptionBreakpoints', { filters, filterOptions });
     }
 
+    async dataBreakpointInfo(name: string, variablesReference?: number,
+        frameId?: number, bytes?: number, asAddress?: boolean, mode?: string): Promise<any | undefined> {
+        const response = await this.sendRequest<'dataBreakpointInfo'>('dataBreakpointInfo', {
+            name, variablesReference, frameId, bytes, asAddress, mode
+        });
+        if (response) {
+            return { ...response.body };
+        }
+    }
+
+
     protected async sendFunctionBreakpoints(affectedUri: URI): Promise<void> {
         const all = this.breakpoints.getFunctionBreakpoints().map(origin =>
             new DebugFunctionBreakpoint(origin, this.asDebugBreakpointOptions())
@@ -932,6 +944,7 @@ export class DebugSession implements CompositeTreeElement {
                 yield new URI(uriString);
             }
             yield BreakpointManager.FUNCTION_URI;
+            yield BreakpointManager.DATA_URI;
             yield BreakpointManager.EXCEPTION_URI;
             yield BreakpointManager.DATA_URI;
         }

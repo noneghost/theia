@@ -313,6 +313,21 @@ export namespace DebugCommands {
         category: DEBUG_CATEGORY,
         label: 'Remove All Expressions'
     });
+    export const BREAK_WHEN_VALUE_IS_CHANGED = Command.toDefaultLocalizedCommand({
+        id: 'debug.breakpoint.breakWhenValueIsChanged',
+        category: DEBUG_CATEGORY,
+        label: nls.localize('theia/debug/command/breakWhenValueIsChanged', 'Break When Value Is Changed')
+    });
+    export const BREAK_WHEN_VALUE_IS_READ = Command.toDefaultLocalizedCommand({
+        id: 'debug.breakpoint.breakWhenValueIsRead',
+        category: DEBUG_CATEGORY,
+        label: nls.localize('theia/debug/command/breakWhenValueIsRead', 'Break When Value Is Read')
+    });
+    export const BREAK_WHEN_VALUE_IS_ACCESSED = Command.toDefaultLocalizedCommand({
+        id: 'debug.breakpoint.breakWhenValueIsAccessed',
+        category: DEBUG_CATEGORY,
+        label: nls.localize('theia/debug/command/breakWhenValueIsAccessed', 'Break When Value Is Accessed')
+    });
 }
 export namespace DebugThreadContextCommands {
     export const STEP_OVER = {

@@ -44,6 +44,10 @@ export class DebugDataBreakpoint extends DebugBreakpoint<DataBreakpoint> {
         this.breakpoints.removeDataBreakpoint(this.origin.id);
     }
 
+    get name(): string {
+        return this.origin.raw.dataId;
+    }
+
     protected doRender(): React.ReactNode {
         return <>
             <span className="line-info theia-data-breakpoint" title={this.origin.info.description}>
@@ -90,5 +94,26 @@ export class DebugDataBreakpoint extends DebugBreakpoint<DataBreakpoint> {
             className: 'codicon-debug-breakpoint-data',
             message: message || [nls.localizeByDefault('Data Breakpoint')]
         };
+    }
+
+    protected override doGetDecoration(): DebugBreakpointDecoration {
+        if (!this.isSupported()) {
+            return this.getDisabledBreakpointDecoration(nls.localizeByDefault('Data breakpoints are not supported by this debug type'));
+        }
+        return super.doGetDecoration();
+    }
+
+    async checkDataBreakpointInfo(): Promise<void> {
+        const breakpoints = this.breakpoints.getDataBreakpoints();
+        const breakpoint = breakpoints.find(b => b.id === this.id);
+        if (breakpoint) {
+            // if (breakpoint.raw.dataId !== this.name) {
+            //     breakpoint.raw.dataId = this.name;
+            this.breakpoints.setDataBreakpoints(breakpoints);
+            // }
+        } else {
+            breakpoints.push(this.origin);
+            this.breakpoints.setDataBreakpoints(breakpoints);
+        }
     }
 }
