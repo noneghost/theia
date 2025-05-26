@@ -26,6 +26,9 @@ export namespace ConsoleCommands {
     export const SELECT_ALL: Command = {
         id: 'console.selectAll'
     };
+    export const COPY_ALL: Command = {
+        id: 'console.copyAll'
+    };
     export const COLLAPSE_ALL: Command = {
         id: 'console.collapseAll'
     };
@@ -58,6 +61,7 @@ export class ConsoleContribution implements FrontendApplicationContribution, Com
 
     registerCommands(commands: CommandRegistry): void {
         commands.registerCommand(ConsoleCommands.SELECT_ALL, this.newCommandHandler(console => console.selectAll()));
+        commands.registerCommand(ConsoleCommands.COPY_ALL, this.newCommandHandler(console => console.copyAll()));
         commands.registerCommand(ConsoleCommands.COLLAPSE_ALL, this.newCommandHandler(console => console.collapseAll()));
         commands.registerCommand(ConsoleCommands.CLEAR, this.newCommandHandler(console => console.clear()));
         commands.registerCommand(ConsoleCommands.EXECUTE, this.newCommandHandler(console => console.execute()));
@@ -95,8 +99,8 @@ export class ConsoleContribution implements FrontendApplicationContribution, Com
             order: 'a1',
         });
         menus.registerMenuAction(ConsoleContextMenu.CLIPBOARD, {
-            commandId: ConsoleCommands.SELECT_ALL.id,
-            label: CommonCommands.SELECT_ALL.label,
+            commandId: ConsoleCommands.COPY_ALL.id,
+            label: nls.localizeByDefault('Collapse All'),
             order: 'a2'
         });
         menus.registerMenuAction(ConsoleContextMenu.CLIPBOARD, {
