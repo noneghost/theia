@@ -28,6 +28,7 @@ import { DebugWatchManager } from '../debug-watch-manager';
 import { DebugFunctionBreakpoint } from '../model/debug-function-breakpoint';
 import { DebugInstructionBreakpoint } from '../model/debug-instruction-breakpoint';
 import { DebugSessionOptionsBase } from '../debug-session-options';
+import { DebugDataBreakpoint } from '../model/debug-data-breakpoint';
 
 @injectable()
 export class DebugViewModel implements Disposable {
@@ -131,6 +132,10 @@ export class DebugViewModel implements Disposable {
 
     get functionBreakpoints(): DebugFunctionBreakpoint[] {
         return this.manager.getFunctionBreakpoints(this.currentSession);
+    }
+
+    get dataBreakpoints(): DebugDataBreakpoint[] {
+        return this.manager.getDataBreakpoints(this.currentSession);
     }
 
     get instructionBreakpoints(): DebugInstructionBreakpoint[] {
