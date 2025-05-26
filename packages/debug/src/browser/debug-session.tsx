@@ -393,7 +393,9 @@ export class DebugSession implements CompositeTreeElement {
         }
         // mark as initialized, so updated breakpoints are shown in editor
         this.initialized = true;
-        await this.updateBreakpoints({ sourceModified: false });
+        if (!this.options.configuration.noDebug) {
+            await this.updateBreakpoints({ sourceModified: false });
+        }
         if (this.capabilities.supportsConfigurationDoneRequest) {
             await this.sendRequest('configurationDone', {});
         }
@@ -980,10 +982,10 @@ export class DebugSession implements CompositeTreeElement {
             // Inlines the name of the child debug session
             label = `: ${child.label}`;
         }
-        return <div className='theia-debug-session' title='Session'>
-            <span className='label'>{this.label + label}</span>
-            <span className='status'>{state}</span>
-        </div>;
+        return <div className='theia-debug-session' title = 'Session' >
+            <span className='label' > { this.label + label } </span>
+                < span className = 'status' > { state } </span>
+                    </div>;
     }
 
     *getElements(): IterableIterator<DebugThread | DebugSession> {
