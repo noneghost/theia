@@ -102,3 +102,20 @@ export namespace InstructionBreakpoint {
         return isObject<InstructionBreakpoint>(arg) && isString(arg.instructionReference);
     }
 }
+
+export interface DataBreakpoint extends BaseBreakpoint {
+    raw: DebugProtocol.DataBreakpoint
+}
+
+export namespace DataBreakpoint {
+    export function create(data: DebugProtocol.DataBreakpoint, origin?: DataBreakpoint): DataBreakpoint {
+        return {
+            id: origin ? origin.id : UUID.uuid4(),
+            enabled: origin ? origin.enabled : true,
+            raw: {
+                ...(origin && origin.raw),
+                ...data
+            }
+        };
+    }
+}
