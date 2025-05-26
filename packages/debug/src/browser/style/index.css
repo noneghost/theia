@@ -33,11 +33,11 @@
   align-items: center;
 }
 
-.theia-source-breakpoint > span,
-.theia-debug-session > span,
-.theia-debug-thread > span,
-.theia-debug-stack-frame > span,
-.theia-debug-stack-frame .file > span {
+.theia-source-breakpoint>span,
+.theia-debug-session>span,
+.theia-debug-thread>span,
+.theia-debug-stack-frame>span,
+.theia-debug-stack-frame .file>span {
   margin-left: calc(var(--theia-ui-padding) / 2);
 }
 
@@ -90,7 +90,7 @@
   font-style: italic;
 }
 
-.theia-debug-stack-frame .file > span {
+.theia-debug-stack-frame .file>span {
   white-space: nowrap;
 }
 
@@ -113,7 +113,7 @@
   padding-left: calc(var(--theia-ui-padding) * 2);
 }
 
-.theia-session-container > .debug-toolbar {
+.theia-session-container>.debug-toolbar {
   padding-top: var(--theia-ui-padding);
   padding-bottom: var(--theia-ui-padding);
   border-bottom: 1px solid var(--theia-sideBarSectionHeader-border);
@@ -145,7 +145,7 @@
   opacity: 1;
 }
 
-.debug-toolbar .debug-action > div {
+.debug-toolbar .debug-action>div {
   font-family: var(--theia-ui-font-family);
   font-size: var(--theia-ui-font-size0);
   display: flex;
@@ -161,9 +161,11 @@
 #debug-console .theia-console-info {
   color: var(--theia-debugConsole-infoForeground) !important;
 }
+
 #debug-console .theia-console-warning {
   color: var(--theia-debugConsole-warningForeground) !important;
 }
+
 #debug-console .theia-console-error {
   color: var(--theia-debugConsole-errorForeground) !important;
 }
@@ -246,9 +248,7 @@
 .codicon-debug-breakpoint-function,
 .codicon-debug-breakpoint-data,
 .codicon-debug-breakpoint-unsupported,
-.codicon-debug-hint:not([class*="codicon-debug-breakpoint"]):not(
-    [class*="codicon-debug-stackframe"]
-  ),
+.codicon-debug-hint:not([class*="codicon-debug-breakpoint"]):not([class*="codicon-debug-stackframe"]),
 .codicon-debug-breakpoint.codicon-debug-stackframe-focused::after,
 .codicon-debug-breakpoint.codicon-debug-stackframe::after {
   color: var(--theia-debugIcon-breakpointForeground) !important;
@@ -264,9 +264,7 @@
 
 .codicon-debug-stackframe,
 .monaco-editor .theia-debug-top-stack-frame-column::before {
-  color: var(
-    --theia-debugIcon-breakpointCurrentStackframeForeground
-  ) !important;
+  color: var(--theia-debugIcon-breakpointCurrentStackframeForeground) !important;
 }
 
 .codicon-debug-stackframe-focused {
@@ -290,7 +288,8 @@
   width: 0.9em;
   display: inline-flex;
   vertical-align: middle;
-  margin-top: -1px; /* TODO @misolori: figure out a way to not use negative margin for alignment */
+  margin-top: -1px;
+  /* TODO @misolori: figure out a way to not use negative margin for alignment */
 }
 
 .monaco-editor .theia-debug-top-stack-frame-column {
@@ -308,9 +307,7 @@
   margin-right: 4px;
 }
 
-.codicon-debug-hint:not([class*="codicon-debug-breakpoint"]):not(
-    [class*="codicon-debug-stackframe"]
-  ) {
+.codicon-debug-hint:not([class*="codicon-debug-breakpoint"]):not([class*="codicon-debug-stackframe"]) {
   opacity: 0.4 !important;
 }
 
@@ -327,6 +324,7 @@
 .codicon-debug-start {
   color: var(--theia-debugIcon-startForeground) !important;
 }
+
 .codicon-debug-pause {
   color: var(--theia-debugIcon-pauseForeground) !important;
 }
@@ -334,22 +332,28 @@
 .codicon-debug-stop {
   color: var(--theia-debugIcon-stopForeground) !important;
 }
+
 .codicon-debug-disconnect {
   color: var(--theia-debugIcon-disconnectForeground) !important;
 }
+
 .codicon-debug-restart,
 .codicon-debug-restart-frame {
   color: var(--theia-debugIcon-restartForeground) !important;
 }
+
 .codicon-debug-step-over {
   color: var(--theia-debugIcon-stepOverForeground) !important;
 }
+
 .codicon-debug-step-into {
   color: var(--theia-debugIcon-stepIntoForeground) !important;
 }
+
 .codicon-debug-step-out {
   color: var(--theia-debugIcon-stepOutForeground) !important;
 }
+
 .codicon-debug-continue,
 .codicon-debug-reverse-continue {
   color: var(--theia-debugIcon-continueForeground) !important;
@@ -416,8 +420,7 @@
 /* Status Bar */
 .theia-mod-debugging #theia-statusBar {
   background: var(--theia-statusBar-debuggingBackground);
-  border-top: var(--theia-border-width) solid
-    var(--theia-statusBar-debuggingBorder);
+  border-top: var(--theia-border-width) solid var(--theia-statusBar-debuggingBorder);
 }
 
 .theia-mod-debugging #theia-statusBar .area .element {
@@ -425,9 +428,7 @@
 }
 
 /** Exception Widget */
-.monaco-editor
-  .zone-widget
-  .zone-widget-container.theia-debug-exception-widget {
+.monaco-editor .zone-widget .zone-widget-container.theia-debug-exception-widget {
   color: var(--theia-editor-foreground);
   font-size: var(--theia-code-font-size);
   line-height: var(--theia-code-line-height);
