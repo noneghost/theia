@@ -46,6 +46,7 @@ import { DebugInstructionBreakpoint } from './model/debug-instruction-breakpoint
 import { nls } from '@theia/core';
 import { TestService, TestServices } from '@theia/test/lib/browser/test-service';
 import { DebugSessionManager } from './debug-session-manager';
+import { DebugDataBreakpoint } from './model/debug-data-breakpoint';
 
 export enum DebugState {
     Inactive,
@@ -188,10 +189,11 @@ export class DebugSession implements CompositeTreeElement {
     }
 
     async toSource(uri: URI): Promise<DebugSource> {
-        const source = this.getSourceForUri(uri);
-        if (source) {
-            return source;
-        }
+        // theia[#13883]
+        // const source = this.getSourceForUri(uri);
+        // if (source) {
+        //     return source;
+        // }
 
         return this.getSource(await this.toDebugSource(uri));
     }
@@ -604,6 +606,10 @@ export class DebugSession implements CompositeTreeElement {
         return this.getBreakpoints(BreakpointManager.FUNCTION_URI).filter((breakpoint): breakpoint is DebugFunctionBreakpoint => breakpoint instanceof DebugFunctionBreakpoint);
     }
 
+    getDataBreakpoints(): DebugDataBreakpoint[] {
+        return this.getBreakpoints(BreakpointManager.DATA_URI).filter((breakpoint): breakpoint is DebugDataBreakpoint => breakpoint instanceof DebugDataBreakpoint);
+    }
+
     getInstructionBreakpoints(): DebugInstructionBreakpoint[] {
         if (this.capabilities.supportsInstructionBreakpoints) {
             return this.getBreakpoints(BreakpointManager.INSTRUCTION_URI)
@@ -718,6 +724,8 @@ export class DebugSession implements CompositeTreeElement {
                 await this.sendFunctionBreakpoints(affectedUri);
             } else if (affectedUri.toString() === BreakpointManager.INSTRUCTION_URI.toString()) {
                 await this.sendInstructionBreakpoints();
+            } else if (affectedUri.toString() === BreakpointManager.DATA_URI.toString()) {
+                await this.sendDataBreakpoints(affectedUri);
             } else {
                 await this.sendSourceBreakpoints(affectedUri, sourceModified);
             }
@@ -740,6 +748,58 @@ export class DebugSession implements CompositeTreeElement {
             }
         }
         await this.sendRequest('setExceptionBreakpoints', { filters, filterOptions });
+    }
+
+    async dataBreakpointInfo(name: string, variablesReference?: number,
+        frameId?: number, bytes?: number, asAddress?: boolean, mode?: string): Promise<any | undefined> {
+        const response = await this.sendRequest<'dataBreakpointInfo'>('dataBreakpointInfo', {
+            name, variablesReference, frameId, bytes, asAddress, mode
+        });
+        if (response) {
+            return { ...response.body };
+        }
+    }
+
+    async sendDataBreakpoints(affectedUri: URI): Promise<void> {
+        const all = this.breakpoints.getDataBreakpoints().map(origin =>
+            new DebugDataBreakpoint(origin, this.asDebugBreakpointOptions())
+        );
+        const enabled = all.filter(b => b.enabled);
+        if (this.capabilities.supportsDataBreakpoints) {
+            try {
+                const response = await this.sendRequest('setDataBreakpoints', {
+                    breakpoints: enabled.map(b => b.origin.raw)
+                });
+                // Apparently, `body` and `breakpoints` can be missing.
+                // https://github.com/eclipse-theia/theia/issues/11885
+                // https://github.com/microsoft/vscode/blob/80004351ccf0884b58359f7c8c801c91bb827d83/src/vs/workbench/contrib/debug/browser/debugSession.ts#L448-L449
+                if (response && response.body) {
+                    response.body.breakpoints.forEach((raw, index) => {
+                        // node debug adapter returns more breakpoints sometimes
+                        if (enabled[index]) {
+                            enabled[index].update({ raw });
+                        }
+                    });
+                }
+            } catch (error) {
+                // could be error or promise rejection of DebugProtocol.SetDataBreakpoints
+                if (error instanceof Error) {
+                    console.error(`Error setting breakpoints: ${error.message}`);
+                } else {
+                    // handle adapters that send failed DebugProtocol.SetDataBreakpoints for invalid breakpoints
+                    const genericMessage: string = 'Data breakpoint not valid for current debug session';
+                    const message: string = error.message ? `${error.message}` : genericMessage;
+                    console.warn(`Could not handle data breakpoints: ${message}, disabling...`);
+                    enabled.forEach(b => b.update({
+                        raw: {
+                            verified: false,
+                            message
+                        }
+                    }));
+                }
+            }
+        }
+        this.setBreakpoints(affectedUri, all);
     }
 
     protected async sendFunctionBreakpoints(affectedUri: URI): Promise<void> {
@@ -875,6 +935,7 @@ export class DebugSession implements CompositeTreeElement {
                 yield new URI(uriString);
             }
             yield BreakpointManager.FUNCTION_URI;
+            yield BreakpointManager.DATA_URI;
             yield BreakpointManager.EXCEPTION_URI;
         }
     }
