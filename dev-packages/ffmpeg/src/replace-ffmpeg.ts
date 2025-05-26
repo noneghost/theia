@@ -25,6 +25,13 @@ import { hashFile } from './hash';
 export async function replaceFfmpeg(options: ffmpeg.FfmpegOptions = {}): Promise<void> {
     let shouldDownload = true;
     let shouldReplace = true;
+
+    // 如果存在 AXIO_ONE_BUILD 环境变量，跳过下载和替换
+    if (process.env.AXIO_ONE_BUILD) {
+        shouldDownload = false;
+        shouldReplace = false;
+    }
+
     const {
         name: ffmpegName,
         location: ffmpegLocation,
