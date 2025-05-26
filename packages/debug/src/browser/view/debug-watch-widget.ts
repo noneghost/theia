@@ -27,6 +27,7 @@ export class DebugWatchWidget extends SourceTreeWidget {
     static CONTEXT_MENU: MenuPath = ['debug-watch-context-menu'];
     static EDIT_MENU = [...DebugWatchWidget.CONTEXT_MENU, 'a_edit'];
     static REMOVE_MENU = [...DebugWatchWidget.CONTEXT_MENU, 'b_remove'];
+    static BREAK_MENU = [...DebugWatchWidget.CONTEXT_MENU, 'c_break'];
     static FACTORY_ID = 'debug:watch';
     static override createContainer(parent: interfaces.Container): Container {
         const child = SourceTreeWidget.createContainer(parent, {
