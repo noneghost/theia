@@ -24,7 +24,7 @@ import { MenuModelRegistry, CommandRegistry, MAIN_MENU_BAR, Command, Emitter, Mu
 import { EDITOR_CONTEXT_MENU, EDITOR_LINENUMBER_CONTEXT_MENU, EditorManager } from '@theia/editor/lib/browser';
 import { DebugSessionManager } from './debug-session-manager';
 import { DebugWidget } from './view/debug-widget';
-import { FunctionBreakpoint } from './breakpoint/breakpoint-marker';
+import { DataBreakpoint, FunctionBreakpoint } from './breakpoint/breakpoint-marker';
 import { BreakpointManager } from './breakpoint/breakpoint-manager';
 import { DebugConfigurationManager } from './debug-configuration-manager';
 import { DebugState, DebugSession } from './debug-session';
@@ -57,6 +57,8 @@ import { DebugInstructionBreakpoint } from './model/debug-instruction-breakpoint
 import { DebugConfiguration } from '../common/debug-configuration';
 import { DebugExceptionBreakpoint } from './view/debug-exception-breakpoint';
 import { DebugToolBar } from './view/debug-toolbar-widget';
+import { DebugDataBreakpoint } from './model/debug-data-breakpoint';
+
 
 export namespace DebugMenus {
     export const DEBUG = [...MAIN_MENU_BAR, '6_debug'];
@@ -325,6 +327,21 @@ export namespace DebugCommands {
         id: 'debug.watch.removeAllExpressions',
         category: DEBUG_CATEGORY,
         label: 'Remove All Expressions'
+    });
+    export const BREAK_WHEN_VALUE_IS_CHANGED = Command.toDefaultLocalizedCommand({
+        id: 'debug.breakpoint.breakWhenValueIsChanged',
+        category: DEBUG_CATEGORY,
+        label: nls.localize('theia/debug/command/breakWhenValueIsChanged', 'Break When Value Is Changed')
+    });
+    export const BREAK_WHEN_VALUE_IS_READ = Command.toDefaultLocalizedCommand({
+        id: 'debug.breakpoint.breakWhenValueIsRead',
+        category: DEBUG_CATEGORY,
+        label: nls.localize('theia/debug/command/breakWhenValueIsRead', 'Break When Value Is Read')
+    });
+    export const BREAK_WHEN_VALUE_IS_ACCESSED = Command.toDefaultLocalizedCommand({
+        id: 'debug.breakpoint.breakWhenValueIsAccessed',
+        category: DEBUG_CATEGORY,
+        label: nls.localize('theia/debug/command/breakWhenValueIsAccessed', 'Break When Value Is Accessed')
     });
 }
 export namespace DebugThreadContextCommands {
@@ -663,6 +680,19 @@ export class DebugFrontendApplicationContribution extends AbstractViewContributi
         menus.linkCompoundMenuNode({ newParentPath: EDITOR_LINENUMBER_CONTEXT_MENU, submenuPath: DebugEditorModel.CONTEXT_MENU });
 
         menus.registerSubmenu(DebugToolBar.MENU, 'Debug Toolbar Menu');
+
+        this.registerDataBreakpointsMenus(registerMenuActions);
+    }
+
+    protected registerDataBreakpointsMenus(registerMenuActions: (menuPath: string[], ...commands: Command[]) => void): void {
+        registerMenuActions(DebugVariablesWidget.BREAK_MENU,
+            DebugCommands.BREAK_WHEN_VALUE_IS_ACCESSED,
+            DebugCommands.BREAK_WHEN_VALUE_IS_CHANGED,
+            DebugCommands.BREAK_WHEN_VALUE_IS_READ);
+        registerMenuActions(DebugWatchWidget.BREAK_MENU,
+            DebugCommands.BREAK_WHEN_VALUE_IS_ACCESSED,
+            DebugCommands.BREAK_WHEN_VALUE_IS_CHANGED,
+            DebugCommands.BREAK_WHEN_VALUE_IS_READ);
     }
 
     override registerCommands(registry: CommandRegistry): void {
@@ -1079,6 +1109,88 @@ export class DebugFrontendApplicationContribution extends AbstractViewContributi
             isEnabled: widget => widget instanceof Widget ? widget instanceof DebugWatchWidget : !!this.watch,
             isVisible: widget => widget instanceof Widget ? widget instanceof DebugWatchWidget : !!this.watch
         });
+        this.registerDataBreakpointsCommands(registry);
+    }
+
+    protected async getDataBreakpointInfo(accessType: 'read' | 'write' | 'readWrite'): Promise<void> {
+        if (this.manager.currentSession) {
+            let name: string | undefined = undefined;
+            let variablesReference: number | undefined = undefined;
+            let bytes: number | undefined = undefined;
+            let frameId: number | undefined = undefined;
+            let asAddress: boolean = false;
+            if (!!this.selectedVariable && this.manager.currentSession.capabilities.supportsDataBreakpoints) {
+                name = this.selectedVariable.name;
+                // @ts-ignore
+                variablesReference = this.selectedVariable.parent.variablesReference;
+            } else if (!!this.watchExpression) {
+                // match memory address examples:
+                //    "*(int*)0x12434",
+                //    "*(float*)123456",
+                //    "*(MyStruct*)  0x1a2b",
+                //    "*(custom_type123*)   7890",
+                //    "*(AnotherType*)0xDEADBEEF",
+                //    "*(Some_Thing42*) 45678"
+                const regex = /\*\(\s*[_a-zA-Z][_a-zA-Z0-9]*\s*\*\)\s*(0x[0-9a-fA-F]+|\d+)/;
+                const expression = this.watchExpression.expression;
+                name = expression;
+                // memory address
+                const matchResult = expression.match(regex);
+                if (matchResult) {
+                    const dataType: string = matchResult[0].toLocaleLowerCase();
+                    const supportTypesOffset: { [K: string]: number } = { char: 1, int: 4, float: 4, double: 8 };
+                    // address
+                    asAddress = true;
+                    name = expression;
+                    if (Object.keys(supportTypesOffset).includes(dataType)) {
+                        bytes = supportTypesOffset[dataType];
+                    } else {
+                        bytes = 4;
+                    }
+                } else if (this.manager.currentFrame?.frameId) {
+                    frameId = this.manager.currentFrame.frameId;
+                }
+            }
+            if (name !== undefined) {
+                const response = await this.manager.currentSession.dataBreakpointInfo(name, variablesReference, frameId, bytes, asAddress);
+                if (response && response.accessTypes?.includes(accessType)) {
+                    const { labelProvider, breakpointManager, editorManager } = this;
+                    const options = { labelProvider, breakpoints: breakpointManager, editorManager };
+                    await new DebugDataBreakpoint(DataBreakpoint.create({ dataId: response.dataId, accessType }), options).checkDataBreakpointInfo();
+                }
+            }
+
+        }
+    }
+
+    protected registerDataBreakpointsCommands(registry: CommandRegistry): void {
+        const enableDataBreakpoint = () => {
+            const varialeDataBreakpoint = !!this.selectedVariable;
+            const watchExpressionDataBreakpoint = !!this.watchExpression;
+            return varialeDataBreakpoint || watchExpressionDataBreakpoint;
+        };
+        const visiableDataBreakpoint = () => !!this.selectedVariable || !!this.watchExpression;
+        registry.registerCommand(DebugCommands.BREAK_WHEN_VALUE_IS_READ, {
+            execute: () => {
+                this.getDataBreakpointInfo('read');
+            },
+            isEnabled: enableDataBreakpoint,
+            isVisible: visiableDataBreakpoint,
+        });
+        registry.registerCommand(DebugCommands.BREAK_WHEN_VALUE_IS_CHANGED, {
+            execute: () => {
+                this.getDataBreakpointInfo('write');
+            },
+            isEnabled: enableDataBreakpoint,
+            isVisible: visiableDataBreakpoint,
+        });
+        registry.registerCommand(DebugCommands.BREAK_WHEN_VALUE_IS_ACCESSED, {
+            execute: () => {
+                this.getDataBreakpointInfo('readWrite');
+            },
+            isEnabled: enableDataBreakpoint,
+            isVisible: visiableDataBreakpoint,
+        });
     }
 
     override registerKeybindings(keybindings: KeybindingRegistry): void {
@@ -1308,6 +1420,10 @@ export class DebugFrontendApplicationContribution extends AbstractViewContributi
         const breakpoint = this.selectedAnyBreakpoint;
         return breakpoint && breakpoint instanceof DebugFunctionBreakpoint ? breakpoint : undefined;
     }
+    get selectedDataBreakpoint(): DebugDataBreakpoint | undefined {
+        const breakpoint = this.selectedAnyBreakpoint;
+        return breakpoint && breakpoint instanceof DebugDataBreakpoint ? breakpoint : undefined;
+    }
     get selectedInstructionBreakpoint(): DebugInstructionBreakpoint | undefined {
         if (this.selectedAnyBreakpoint instanceof DebugInstructionBreakpoint) {
             return this.selectedAnyBreakpoint;
@@ -1319,9 +1435,10 @@ export class DebugFrontendApplicationContribution extends AbstractViewContributi
         return selectedElement instanceof DebugExceptionBreakpoint ? selectedElement : undefined;
     }
 
-    get selectedSettableBreakpoint(): DebugFunctionBreakpoint | DebugInstructionBreakpoint | DebugSourceBreakpoint | undefined {
+    get selectedSettableBreakpoint(): DebugFunctionBreakpoint | DebugDataBreakpoint | DebugInstructionBreakpoint | DebugSourceBreakpoint | undefined {
         const selected = this.selectedAnyBreakpoint;
-        if (selected instanceof DebugFunctionBreakpoint || selected instanceof DebugInstructionBreakpoint || selected instanceof DebugSourceBreakpoint) {
+        if (selected instanceof DebugFunctionBreakpoint || selected instanceof DebugDataBreakpoint ||
+            selected instanceof DebugInstructionBreakpoint || selected instanceof DebugSourceBreakpoint) {
             return selected;
         }
     }
