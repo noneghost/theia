@@ -272,8 +272,8 @@ export enum TextDocumentChangeReason {
 
 @es5ClassCompat
 export class Position {
-    private _line: number;
-    private _character: number;
+    public line: number;
+    public character: number;
     constructor(line: number, char: number) {
         if (line < 0) {
             throw new Error('line number cannot be negative');
@@ -281,36 +281,28 @@ export class Position {
         if (char < 0) {
             throw new Error('char number cannot be negative');
         }
-        this._line = line;
-        this._character = char;
-    }
-
-    get line(): number {
-        return this._line;
-    }
-
-    get character(): number {
-        return this._character;
+        this.line = line;
+        this.character = char;
     }
 
     isBefore(other: Position): boolean {
-        if (this._line < other._line) {
+        if (this.line < other.line) {
             return true;
         }
-        if (other._line < this._line) {
+        if (other.line < this.line) {
             return false;
         }
-        return this._character < other._character;
+        return this.character < other.character;
     }
 
     isBeforeOrEqual(other: Position): boolean {
-        if (this._line < other._line) {
+        if (this.line < other.line) {
             return true;
         }
-        if (other._line < this._line) {
+        if (other.line < this.line) {
             return false;
         }
-        return this._character <= other._character;
+        return this.character <= other.character;
     }
 
     isAfter(other: Position): boolean {
@@ -322,19 +314,19 @@ export class Position {
     }
 
     isEqual(other: Position): boolean {
-        return this._line === other._line && this._character === other._character;
+        return this.line === other.line && this.character === other.character;
     }
 
     compareTo(other: Position): number {
-        if (this._line < other._line) {
+        if (this.line < other.line) {
             return -1;
-        } else if (this._line > other.line) {
+        } else if (this.line > other.line) {
             return 1;
         } else {
             // equal line
-            if (this._character < other._character) {
+            if (this.character < other.character) {
                 return -1;
-            } else if (this._character > other._character) {
+            } else if (this.character > other.character) {
                 return 1;
             } else {
                 // equal line and character
@@ -437,8 +429,8 @@ export class Position {
 
 @es5ClassCompat
 export class Range {
-    protected _start: Position;
-    protected _end: Position;
+    public start: Position;
+    public end: Position;
 
     constructor(start: Position, end: Position);
     constructor(startLine: number, startColumn: number, endLine: number, endColumn: number);
@@ -459,32 +451,24 @@ export class Range {
         }
 
         if (start.isBefore(end)) {
-            this._start = start;
-            this._end = end;
+            this.start = start;
+            this.end = end;
         } else {
-            this._start = end;
-            this._end = start;
+            this.start = end;
+            this.end = start;
         }
-    }
-
-    get start(): Position {
-        return this._start;
-    }
-
-    get end(): Position {
-        return this._end;
     }
 
     contains(positionOrRange: Position | Range): boolean {
         if (positionOrRange instanceof Range) {
-            return this.contains(positionOrRange._start)
-                && this.contains(positionOrRange._end);
+            return this.contains(positionOrRange.start)
+                && this.contains(positionOrRange.end);
 
         } else if (positionOrRange instanceof Position) {
-            if (positionOrRange.isBefore(this._start)) {
+            if (positionOrRange.isBefore(this.start)) {
                 return false;
             }
-            if (this._end.isBefore(positionOrRange)) {
+            if (this.end.isBefore(positionOrRange)) {
                 return false;
             }
             return true;
@@ -493,12 +477,12 @@ export class Range {
     }
 
     isEqual(other: Range): boolean {
-        return this._start.isEqual(other._start) && this._end.isEqual(other._end);
+        return this.start.isEqual(other.start) && this.end.isEqual(other.end);
     }
 
     intersection(other: Range): Range | undefined {
-        const start = Position.Max(other.start, this._start);
-        const end = Position.Min(other.end, this._end);
+        const start = Position.Max(other.start, this.start);
+        const end = Position.Min(other.end, this.end);
         if (start.isAfter(end)) {
             // this happens when there is no overlap:
             // |-----|
@@ -514,17 +498,17 @@ export class Range {
         } else if (other.contains(this)) {
             return other;
         }
-        const start = Position.Min(other.start, this._start);
+        const start = Position.Min(other.start, this.start);
         const end = Position.Max(other.end, this.end);
         return new Range(start, end);
     }
 
     get isEmpty(): boolean {
-        return this._start.isEqual(this._end);
+        return this.start.isEqual(this.end);
     }
 
     get isSingleLine(): boolean {
-        return this._start.line === this._end.line;
+        return this.start.line === this.end.line;
     }
 
     with(change: { start?: Position, end?: Position }): Range;
@@ -547,7 +531,7 @@ export class Range {
             end = startOrChange.end || this.end;
         }
 
-        if (start.isEqual(this._start) && end.isEqual(this.end)) {
+        if (start.isEqual(this.start) && end.isEqual(this.end)) {
             return this;
         }
         return new Range(start, end);
@@ -569,8 +553,8 @@ export class Range {
 
 @es5ClassCompat
 export class Selection extends Range {
-    private _anchor: Position;
-    private _active: Position;
+    public anchor: Position;
+    public active: Position;
     constructor(anchor: Position, active: Position);
     constructor(anchorLine: number, anchorColumn: number, activeLine: number, activeColumn: number);
     constructor(anchorLineOrAnchor: number | Position, anchorColumnOrActive: number | Position, activeLine?: number, activeColumn?: number) {
@@ -591,20 +575,12 @@ export class Selection extends Range {
 
         super(anchor, active);
 
-        this._anchor = anchor;
-        this._active = active;
-    }
-
-    get active(): Position {
-        return this._active;
-    }
-
-    get anchor(): Position {
-        return this._anchor;
+        this.anchor = anchor;
+        this.active = active;
     }
 
     get isReversed(): boolean {
-        return this._anchor === this._end;
+        return this.anchor === this.end;
     }
 }
 
@@ -652,7 +628,7 @@ export class SnippetString {
         return value.replace(/\$|}|\\/g, '\\$&');
     }
 
-    private _tabstop: number = 1;
+    private tabstop: number = 1;
 
     value: string;
 
@@ -665,19 +641,19 @@ export class SnippetString {
         return this;
     }
 
-    appendTabstop(number: number = this._tabstop++): SnippetString {
+    appendTabstop(number: number = this.tabstop++): SnippetString {
         this.value += '$';
         this.value += number;
         return this;
     }
 
-    appendPlaceholder(value: string | ((snippet: SnippetString) => void), number: number = this._tabstop++): SnippetString {
+    appendPlaceholder(value: string | ((snippet: SnippetString) => void), number: number = this.tabstop++): SnippetString {
 
         if (typeof value === 'function') {
             const nested = new SnippetString();
-            nested._tabstop = this._tabstop;
+            nested.tabstop = this.tabstop;
             value(nested);
-            this._tabstop = nested._tabstop;
+            this.tabstop = nested.tabstop;
             value = nested.value;
         } else {
             value = SnippetString._escape(value);
@@ -692,7 +668,7 @@ export class SnippetString {
         return this;
     }
 
-    appendChoice(values: string[], number: number = this._tabstop++): SnippetString {
+    appendChoice(values: string[], number: number = this.tabstop++): SnippetString {
         const value = values.map(s => s.replace(/\$|}|\\|,/g, '\\$&')).join(',');
         this.value += `\$\{${number}|${value}|\}`;
         return this;
@@ -702,9 +678,9 @@ export class SnippetString {
 
         if (typeof defaultValue === 'function') {
             const nested = new SnippetString();
-            nested._tabstop = this._tabstop;
+            nested.tabstop = this.tabstop;
             defaultValue(nested);
-            this._tabstop = nested._tabstop;
+            this.tabstop = nested.tabstop;
             defaultValue = nested.value;
 
         } else if (typeof defaultValue === 'string') {
@@ -799,23 +775,8 @@ export enum ConfigurationTarget {
 @es5ClassCompat
 export class RelativePattern {
 
-    private _base!: string;
-    get base(): string {
-        return this._base;
-    }
-    set base(base: string) {
-        this._base = base;
-        this._baseUri = URI.file(base);
-    }
-
-    private _baseUri!: URI;
-    get baseUri(): URI {
-        return this._baseUri;
-    }
-    set baseUri(baseUri: URI) {
-        this._baseUri = baseUri;
-        this.base = baseUri.fsPath;
-    }
+    public base!: string;
+    public baseUri!: URI;
 
     constructor(base: theia.WorkspaceFolder | URI | string, public pattern: string) {
         if (typeof base !== 'string') {
@@ -830,10 +791,13 @@ export class RelativePattern {
 
         if (typeof base === 'string') {
             this.baseUri = URI.file(base);
+            this.base = base;
         } else if (URI.isUri(base)) {
             this.baseUri = base;
+            this.base = base.fsPath;
         } else {
             this.baseUri = base.uri;
+            this.base = base.uri.fsPath;
         }
     }
 
@@ -883,46 +847,13 @@ export enum SyntaxTokenType {
 @es5ClassCompat
 export class TextEdit {
 
-    protected _range: Range;
-    protected _newText: string;
-    protected _newEol: EndOfLine | undefined;
-
-    get range(): Range {
-        return this._range;
-    }
-
-    set range(value: Range) {
-        if (value && !Range.isRange(value)) {
-            throw illegalArgument('range');
-        }
-        this._range = value;
-    }
-
-    get newText(): string {
-        return this._newText || '';
-    }
-
-    set newText(value: string) {
-        if (value && typeof value !== 'string') {
-            throw illegalArgument('newText');
-        }
-        this._newText = value;
-    }
-
-    get newEol(): EndOfLine | undefined {
-        return this._newEol;
-    }
-
-    set newEol(value: EndOfLine) {
-        if (value && typeof value !== 'number') {
-            throw illegalArgument('newEol');
-        }
-        this._newEol = value;
-    }
+    public range: Range;
+    public newText: string;
+    public newEol: EndOfLine | undefined;
 
     constructor(range: Range | undefined, newText: string | undefined) {
         this.range = range!;
-        this.newText = newText!;
+        this.newText = newText! || '';
     }
 
     static isTextEdit(thing: {}): thing is TextEdit {
