@@ -79,6 +79,7 @@ jobs:
         shell: bash
         run: | # npm run build
           npm ci
+          npm run compile
           npm run build:electron 
           git status
           ./scripts/check_git_status.sh
