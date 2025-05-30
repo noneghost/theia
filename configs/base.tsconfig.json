@@ -25,6 +25,14 @@
       "DOM",
       "DOM.AsyncIterable"
     ],
-    "sourceMap": true
-  }
+    "sourceMap": true,
+    "types": [
+      "mocha",
+      "node"
+    ],
+  },
+  "exclude": [
+    "**/*.test.ts",
+    "**/*.spec.ts"
+  ]
 }
