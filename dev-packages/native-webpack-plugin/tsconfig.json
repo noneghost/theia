@@ -3,7 +3,11 @@
   "compilerOptions": {
     "composite": true,
     "rootDir": "src",
-    "outDir": "lib"
+    "outDir": "lib",
+    "types": [
+      "mocha",
+      "node"
+    ]
   },
   "include": [
     "src"
