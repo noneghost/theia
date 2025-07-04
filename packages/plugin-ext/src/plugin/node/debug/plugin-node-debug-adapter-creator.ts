@@ -111,7 +111,7 @@ export class NodeDebugAdapterCreator extends PluginDebugAdapterCreator {
 
     public startDebugAdapter(executable: DebugAdapterExecutable): DebugAdapter {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const options: any = { stdio: ['pipe', 'pipe', 2] };
+        const options: any = { stdio: ['pipe', 'pipe', 2], windowsHide: true };
 
         if (executable.options) {
             options.cwd = executable.options.cwd;
