@@ -29,7 +29,7 @@
     "types": [
       "mocha",
       "node"
-    ],
+    ]
   },
   "exclude": [
     "**/*.test.ts",
