@@ -214,6 +214,7 @@ export class ImageContextVariableContribution implements AIVariableContribution,
 
         const variables: AIVariableResolutionRequest[] = [];
 
+        // @ts-ignore
         for (const item of event.clipboardData.items) {
             if (item.type.startsWith('image/')) {
                 const blob = item.getAsFile();
