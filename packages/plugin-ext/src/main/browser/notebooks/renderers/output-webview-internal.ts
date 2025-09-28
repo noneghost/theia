@@ -73,9 +73,12 @@ interface KernelPreloadModule {
 export async function outputWebviewPreload(ctx: PreloadContext): Promise<void> {
     // workaround to allow rendering of links in outputs for non chromium browsers
     // see https://developer.mozilla.org/en-US/docs/Web/API/Trusted_Types_API#cross-browser_support_for_trusted_types
+    // @ts-ignore
     if (!window.trustedTypes) {
+        // @ts-ignore
         window.trustedTypes = {
             createPolicy: (name: string, rules: unknown) => rules
+            // @ts-ignore
         } as unknown as typeof window.trustedTypes;
     }
 
