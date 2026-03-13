@@ -146,10 +146,6 @@ export class DebugViewModel implements Disposable {
         return this.manager.getFunctionBreakpoints();
     }
 
-    get dataBreakpoints(): DebugDataBreakpoint[] {
-        return this.manager.getDataBreakpoints(this.currentSession);
-    }
-
     get instructionBreakpoints(): DebugInstructionBreakpoint[] {
         return this.manager.getInstructionBreakpoints();
     }

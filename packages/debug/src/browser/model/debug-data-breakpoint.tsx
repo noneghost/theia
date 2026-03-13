@@ -104,7 +104,7 @@ export class DebugDataBreakpoint extends DebugBreakpoint<DataBreakpoint> {
     }
 
     async checkDataBreakpointInfo(): Promise<void> {
-        const breakpoints = this.breakpoints.getDataBreakpoints();
+        const breakpoints = [...this.breakpoints.getDataBreakpoints()];
         const breakpoint = breakpoints.find(b => b.id === this.id);
         if (breakpoint) {
             // if (breakpoint.raw.dataId !== this.name) {
