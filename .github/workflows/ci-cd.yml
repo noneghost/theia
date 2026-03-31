@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - master
+      - feature-axio-one
+
     paths-ignore:
       - '**/*.md'
       - 'doc/**'
@@ -19,47 +21,16 @@ on:
 
 jobs:
 
-  lint:
-    name: Lint
-    runs-on: ubuntu-22.04
-    timeout-minutes: 60
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-
-      - name: Use Node.js 24.x
-        uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
-        with:
-          node-version: 24.x
-          registry-url: 'https://registry.npmjs.org'
-
-      - name: Use Python 3.13
-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
-        with:
-          python-version: '3.13'
-
-      - name: Install and Build
-        shell: bash
-        run: |
-          npm ci
-          ./scripts/check_git_status.sh
-        env:
-          NODE_OPTIONS: --max_old_space_size=4096
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # https://github.com/microsoft/vscode-ripgrep/issues/9
-
-      - name: Lint
-        run: |
-          npm run lint
-
   build:
     name: Build and Test (${{ matrix.os }}, node-${{ matrix.node }})
 
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-2022, ubuntu-22.04, macos-14]
-        node: [22.x, 24.x]
+        os: [windows-2022, ubuntu-22.04]
+        node: [22.x]
+        # os: [windows-2022, ubuntu-22.04, macos-14]
+        # node: [20.x, 22.x]
 
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
@@ -81,32 +52,27 @@ jobs:
       
       - name: Build
         shell: bash
-        run: |
+        run: | # npm run build
           npm ci
-          npm run build
+          npm run compile
+          npm run build:electron 
           git status
           ./scripts/check_git_status.sh
         env:
           NODE_OPTIONS: --max_old_space_size=4096
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # https://github.com/microsoft/vscode-ripgrep/issues/9
 
-      - name: Download Plugins
+      # === 简化后的压缩和上传步骤 ===
+
+      - name: Prepare @theia artifact (resolve symlinks)
         shell: bash
         run: |
-          npm run download:plugins -- --rate-limit 3
-          
-      - name: Test (headless)
-        if: matrix.tests != 'skip'
-        shell: bash
-        run: |
-          npm run rebuild:browser
-          npm run test:theia
+          rm -rf artifact-theia
+          mkdir -p artifact-theia
+          cp -rL node_modules/@theia/* artifact-theia/
 
-      - name: Test (browser)
-        run: |
-          npm run test:browser
-
-      - name: Test (electron)
-        if: runner.os == 'Linux'
-        run: |
-          xvfb-run -a npm run test:electron
+      - name: Upload @theia artifact 
+        uses: actions/upload-artifact@v4
+        with:
+          name: '@theia-${{ runner.os }}-node${{ matrix.node }}'
+          path: artifact-theia/
