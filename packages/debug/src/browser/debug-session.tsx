@@ -216,10 +216,11 @@ export class DebugSession implements CompositeTreeElement {
     }
 
     async toSource(uri: URI): Promise<DebugSource> {
-        const source = this.getSourceForUri(uri);
-        if (source) {
-            return source;
-        }
+        // theia[#13883]
+        // const source = this.getSourceForUri(uri);
+        // if (source) {
+        //     return source;
+        // }
 
         return this.getSource(await this.toDebugSource(uri));
     }
@@ -403,7 +404,9 @@ export class DebugSession implements CompositeTreeElement {
         }
         // mark as initialized, so updated breakpoints are shown in editor
         this.initialized = true;
-        await this.updateBreakpoints({ sourceModified: false });
+        if (!this.options.configuration.noDebug) {
+            await this.updateBreakpoints({ sourceModified: false });
+        }
         if (this.capabilities.supportsConfigurationDoneRequest) {
             await this.sendRequest('configurationDone', {});
         }
@@ -711,6 +714,17 @@ export class DebugSession implements CompositeTreeElement {
         this.breakpoints.updateSessionData(this.id, this.capabilities, updates);
     }
 
+    async dataBreakpointInfo(name: string, variablesReference?: number,
+        frameId?: number, bytes?: number, asAddress?: boolean, mode?: string): Promise<any | undefined> {
+        const response = await this.sendRequest<'dataBreakpointInfo'>('dataBreakpointInfo', {
+            name, variablesReference, frameId, bytes, asAddress, mode
+        });
+        if (response) {
+            return { ...response.body };
+        }
+    }
+
+
     protected async sendFunctionBreakpoints(affectedUri: URI): Promise<void> {
         if (!this.capabilities.supportsFunctionBreakpoints) { return; }
         const all = this.breakpoints.getFunctionBreakpoints();
@@ -814,6 +828,7 @@ export class DebugSession implements CompositeTreeElement {
                 yield new URI(uriString);
             }
             yield BreakpointManager.FUNCTION_URI;
+            yield BreakpointManager.DATA_URI;
             yield BreakpointManager.EXCEPTION_URI;
             yield BreakpointManager.DATA_URI;
         }
@@ -842,10 +857,10 @@ export class DebugSession implements CompositeTreeElement {
             // Inlines the name of the child debug session
             label = `: ${child.label}`;
         }
-        return <div className='theia-debug-session' title='Session'>
-            <span className='label'>{this.label + label}</span>
-            <span className='status'>{state}</span>
-        </div>;
+        return <div className='theia-debug-session' title = 'Session' >
+            <span className='label' > { this.label + label } </span>
+                < span className = 'status' > { state } </span>
+                    </div>;
     }
 
     *getElements(): IterableIterator<DebugThread | DebugSession> {
